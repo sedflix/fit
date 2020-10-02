@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  fit-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    restart: always
+    depends_on:
+      - mongo
+    networks:
+      - frontend
+      - backend
+
+  mongo:
+    image: mongo
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb:/data/db
+    networks:
+      - backend
+
+
+networks:
+  backend:
+  frontend:
+volumes:
+  mongodb:
