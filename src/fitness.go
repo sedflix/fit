@@ -11,6 +11,7 @@ import (
 	"google.golang.org/api/people/v1"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 )
@@ -22,6 +23,13 @@ type userInfoElement struct {
 	StepsDay  int64
 	StepsWeek int64
 }
+
+// byStepsWeek implements sort.Interface based on the userInfoElement.StepsWeek field.
+type allUserInfo []userInfoElement
+
+func (a allUserInfo) Len() int           { return len(a) }
+func (a allUserInfo) Less(i, j int) bool { return a[i].StepsWeek > a[j].StepsWeek }
+func (a allUserInfo) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 // getFitnessService returns the service object google fitness with apt permission to read steps
 func getFitnessService(user OAuthUser) (*fitness.Service, error) {
@@ -189,7 +197,7 @@ func getDetailsWrapper(
 	return
 }
 
-func getAll() (map[string]userInfoElement, error) {
+func getAll() ([]userInfoElement, error) {
 
 	// get all users in usersChannels
 	usersChannels := make(chan OAuthUser)
@@ -203,10 +211,10 @@ func getAll() (map[string]userInfoElement, error) {
 		go getDetailsWrapper(resultQueue, user, getDetails)
 	}
 
-	result := make(map[string]userInfoElement)
+	result := make([]userInfoElement, 0)
 	for i := 0; i < numbersOfUsers; i++ {
 		element := <-resultQueue
-		result[element.Email] = element
+		result = append(result, element)
 	}
 
 	return result, nil
@@ -219,5 +227,21 @@ func list(ctx *gin.Context) {
 		_ = ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+	sort.Sort(allUserInfo(result))
 	ctx.IndentedJSON(http.StatusOK, result)
+}
+
+func index(ctx *gin.Context) {
+	_ = sessions.Default(ctx)
+	result, err := getAll()
+	if err != nil {
+		_ = ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	sort.Sort(allUserInfo(result))
+	ctx.HTML(
+		http.StatusOK,
+		"index.html",
+		result,
+	)
 }

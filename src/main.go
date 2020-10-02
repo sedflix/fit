@@ -52,14 +52,18 @@ func main() {
 	// custom error handling TODO: add ui
 	router.Use(ErrorHandle())
 
-	// index page
-	//router.Static("/css", "./static/css")
-	//router.Static("/img", "./static/img")
-	//router.LoadHTMLGlob("templates/*")
+	// static
+	router.Static("/css", "./web/css")
+	router.Static("/img", "./web/img")
+	router.Static("/js", "./web/js")
+	router.StaticFile("/favicon.ico", "./web/favicon.ico")
+	router.LoadHTMLFiles("web/index.html")
 
-	router.GET("/list", list)
-	router.GET("/login", authoriseUserHandler)
-	router.GET("/auth", oAuthCallbackHandler)
+	router.GET("/", index)         // index page
+	router.GET("/list/json", list) // show information in json
+
+	router.GET("/login", authoriseUserHandler) // to register
+	router.GET("/auth", oAuthCallbackHandler)  // oauth callback
 
 	// Add the pprof routes
 	//pprof.Register(router)

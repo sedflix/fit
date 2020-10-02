@@ -103,9 +103,7 @@ func oAuthCallbackHandler(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"user": user.Email,
-	})
+	ctx.Redirect(http.StatusTemporaryRedirect, "/")
 }
 
 // authoriseUserHandler redirects the user to appropriate url for auth
