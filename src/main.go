@@ -2,8 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-contrib/cache"
+	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"time"
 )
 
 func ErrorHandle() gin.HandlerFunc {
@@ -22,6 +26,19 @@ func ErrorHandle() gin.HandlerFunc {
 	}
 }
 
+func health(ctx *gin.Context) {
+	if mongoClient != nil && config != nil {
+		ctx.JSON(http.StatusOK,
+			gin.H{
+				"health": "ok",
+			})
+	}
+	ctx.JSON(http.StatusBadGateway,
+		gin.H{
+			"health": "lol",
+		})
+}
+
 func main() {
 
 	//setTimeZone
@@ -31,19 +48,23 @@ func main() {
 	}
 
 	// mongodb connection
-	mongoURI := "mongodb://localhost:27017"
+	mongoURI := "mongodb://mongo:27017"
 	err = setupMongo(mongoURI)
 	if err != nil {
 		return
 	}
 
 	// oauth connection
-	err = setupOAuthClientCredentials("./credentials.json")
+	err = setupOAuthClientCredentials("/etc/secret/credentials.json")
 	if err != nil {
 		return
 	}
 
 	router := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
+
+	// cache setup
+	cacheStore := persistence.NewInMemoryStore(time.Minute)
 
 	// setup session cookie storage
 	var store = sessions.NewCookieStore([]byte("secret"))
@@ -59,14 +80,15 @@ func main() {
 	router.StaticFile("/favicon.ico", "./web/favicon.ico")
 	router.LoadHTMLFiles("web/index.html")
 
-	router.GET("/", index)         // index page
-	router.GET("/list/json", list) // show information in json
+	router.GET("/", cache.CachePageWithoutQuery(cacheStore, 5*time.Minute, index)) // index page
+	router.GET("/list/json", list)                                                 // show information in json
 
 	router.GET("/login", authoriseUserHandler) // to register
 	router.GET("/auth", oAuthCallbackHandler)  // oauth callback
 
+	router.GET("/health", health)
 	// Add the pprof routes
 	//pprof.Register(router)
 
-	_ = router.Run("127.0.0.1:9090")
+	_ = router.Run("0.0.0.0:8080")
 }

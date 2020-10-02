@@ -1,3 +1,1 @@
-TODO:
-- [ ] rearrange folder
-- [ ] add ui template
+ kubectl create secret generic google_creds --from-file=src/credentials.json

@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go v0.66.0 // indirect
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff // indirect
 	github.com/coreos/go-oidc v2.2.1+incompatible
-	github.com/gin-contrib/pprof v1.3.0
+	github.com/gin-contrib/cache v1.1.0
 	github.com/gin-gonic/contrib v0.0.0-20200913005814-1c32036e7ea4
 	github.com/gin-gonic/gin v1.6.3
 	github.com/gorilla/sessions v1.2.1 // indirect
