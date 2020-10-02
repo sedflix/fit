@@ -10,6 +10,8 @@ services:
     restart: always
     depends_on:
       - mongo
+    volumes:
+      - /etc/secret/:/etc/secret/
     networks:
       - frontend
       - backend
@@ -23,8 +25,7 @@ services:
       - mongodb:/data/db
     networks:
       - backend
-
-
+      -
 networks:
   backend:
   frontend:
