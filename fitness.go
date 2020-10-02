@@ -8,13 +8,19 @@ import (
 	"github.com/snabb/isoweek"
 	"google.golang.org/api/fitness/v1"
 	"google.golang.org/api/option"
+	"google.golang.org/api/people/v1"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
-type stepsDBElement struct {
-	string
-	int64
+type userInfoElement struct {
+	Name      string
+	Email     string
+	PhotoUrl  string
+	StepsDay  int64
+	StepsWeek int64
 }
 
 // getFitnessService returns the service object google fitness with apt permission to read steps
@@ -94,57 +100,113 @@ func getStepCountCurrentDay(user OAuthUser) (int64, error) {
 // geAllDetailsOfUser returns email-id, step count of the current week, step count of the current day
 // It's supposed to use all the functionality we have
 // TODO: update new functionality
-func geAllDetailsOfUser(user OAuthUser) (string, int64, int64, error) {
+func getAllStepsOfUser(user OAuthUser) (int64, int64, error) {
 
 	currentWeekCount, err := getStepCountCurrentWeek(user)
 	if err != nil {
-		return "", 0, 0, err
+		return 0, 0, err
 	}
 
 	currentDayCount, err := getStepCountCurrentDay(user)
 	if err != nil {
-		return "", 0, 0, err
+		return 0, 0, err
 	}
 
-	return user.Email, currentWeekCount, currentDayCount, err
+	return currentWeekCount, currentDayCount, err
 }
 
-// getStepCountWrapper puts the results of calling "getStepCountFunc" on "user" inside "resultQueue" channel
+func getProfilePicUrl(user OAuthUser) (Name string, Url string, err error) {
+	tokenSource := config.TokenSource(context.TODO(), user.Token)
+	service, err := people.NewService(
+		context.TODO(),
+		option.WithScopes(people.UserinfoProfileScope),
+		option.WithTokenSource(tokenSource),
+	)
+	if err != nil {
+		err = fmt.Errorf("people api error: unable create service \"%v\"", err)
+		return Name, Url, err
+	}
+
+	person, err := service.People.Get("people/me").
+		PersonFields("photos,names").Do()
+	if err != nil {
+		err = fmt.Errorf("people api error: unable get person info \"%v\"", err)
+		return Name, Url, err
+	}
+
+	if len(person.Photos) > 0 {
+		photo := person.Photos[len(person.Photos)-1]
+		Url = photo.Url
+	}
+	if len(person.Names) > 0 {
+		name := person.Names[len(person.Names)-1]
+		Name = name.DisplayName
+	}
+	return Name, Url, err
+}
+
+func getDetails(user OAuthUser) (userInfoElement, error) {
+	currentWeekCount, currentDayCount, err := getAllStepsOfUser(user)
+	if err != nil {
+		log.Printf("uable to get setap for %s due to %v", user.Email, err)
+	}
+
+	Name, profilePicUrl, err2 := getProfilePicUrl(user)
+
+	if err2 != nil {
+		Name = fmt.Sprintf("%v", err2)
+		profilePicUrl = fmt.Sprintf("%v", err2)
+	} else {
+		err2 = err
+	}
+	profilePicUrl = strings.TrimSuffix(profilePicUrl, "=s100")
+
+	return userInfoElement{
+		Name:      Name,
+		Email:     user.Email,
+		PhotoUrl:  profilePicUrl,
+		StepsDay:  currentDayCount,
+		StepsWeek: currentWeekCount,
+	}, err
+
+}
+
+// getDetailsWrapper puts the results of calling "getDetailsFunc" on "user" inside "resultQueue" channel
 // TODO: wg.Done() didn't work, why?
 // TODO: How to write this without using thread variable
-func getStepCountWrapper(
-	resultQueue chan stepsDBElement,
+func getDetailsWrapper(
+	resultQueue chan userInfoElement,
 	user OAuthUser,
-	getStepCountFunc func(authUser OAuthUser) (int64, error)) {
+	getDetailsFunc func(authUser OAuthUser) (userInfoElement, error)) {
 
-	steps, err := getStepCountFunc(user)
+	detail, err := getDetailsFunc(user)
 	if err != nil {
-		resultQueue <- stepsDBElement{user.Email, -1}
+		resultQueue <- detail
 		return
 	}
 
-	resultQueue <- stepsDBElement{user.Email, steps}
+	resultQueue <- detail
 	return
 }
 
-func getAll() (map[string]int64, error) {
+func getAll() (map[string]userInfoElement, error) {
 
 	// get all users in usersChannels
 	usersChannels := make(chan OAuthUser)
 	go getUsersFromDB(usersChannels)
 
 	// resultQueue : the steps of each user will be stored in it
-	resultQueue := make(chan stepsDBElement)
+	resultQueue := make(chan userInfoElement)
 	numbersOfUsers := 0
 	for user := range usersChannels {
 		numbersOfUsers++
-		go getStepCountWrapper(resultQueue, user, getStepCountCurrentWeek)
+		go getDetailsWrapper(resultQueue, user, getDetails)
 	}
 
-	result := make(map[string]int64)
+	result := make(map[string]userInfoElement)
 	for i := 0; i < numbersOfUsers; i++ {
-		userSteps := <-resultQueue
-		result[userSteps.string] = userSteps.int64
+		element := <-resultQueue
+		result[element.Email] = element
 	}
 
 	return result, nil

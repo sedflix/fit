@@ -9,6 +9,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/fitness/v1"
+	"google.golang.org/api/people/v1"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -25,6 +26,8 @@ var scope = []string{
 	fitness.FitnessActivityReadScope,
 	fitness.FitnessBodyReadScope,
 	oidc.ScopeOpenID,
+	people.UserinfoProfileScope,
+	people.UserinfoEmailScope,
 	"profile",
 	"email",
 }
