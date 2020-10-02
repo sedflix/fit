@@ -80,7 +80,7 @@ func main() {
 	router.StaticFile("/favicon.ico", "./web/favicon.ico")
 	router.LoadHTMLFiles("web/index.html")
 
-	router.GET("/", cache.CachePageWithoutQuery(cacheStore, 5*time.Minute, index)) // index page
+	router.GET("/", cache.CachePageWithoutQuery(cacheStore, 2*time.Minute, index)) // index page
 	router.GET("/list/json", list)                                                 // show information in json
 
 	router.GET("/login", authoriseUserHandler) // to register
