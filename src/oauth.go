@@ -32,6 +32,13 @@ var scope = []string{
 	"email",
 }
 
+// getTokenSource refreshes the token
+func getTokenSource(user OAuthUser) oauth2.TokenSource {
+	tokenSource := config.TokenSource(context.Background(), user.Token)
+	tokenSource = oauth2.ReuseTokenSource(user.Token, tokenSource)
+	return tokenSource
+}
+
 // setupOAuthClientCredentials will create oauth2.config and oidc.Provider
 // using fileName the path to a json storing credentials obtained from google console
 func setupOAuthClientCredentials(fileName string) (err error) {
@@ -76,7 +83,7 @@ func oAuthCallbackHandler(ctx *gin.Context) {
 
 	// get oauth TOKEN
 	code := ctx.Query("code")
-	token, err := config.Exchange(context.TODO(), code, oauth2.AccessTypeOffline)
+	token, err := config.Exchange(context.Background(), code, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
 	if err != nil {
 		_ = ctx.AbortWithError(http.StatusInternalServerError,
 			fmt.Errorf("oauth code-token exchange failed due to %v", err))
@@ -84,7 +91,7 @@ func oAuthCallbackHandler(ctx *gin.Context) {
 	}
 
 	// make token source for using it in oidc call
-	tokenSource := config.TokenSource(context.TODO(), token)
+	tokenSource := config.TokenSource(context.Background(), token)
 	userInfo, err := oidcProvider.UserInfo(context.Background(), tokenSource)
 	if err != nil {
 		_ = ctx.AbortWithError(http.StatusInternalServerError,
@@ -103,6 +110,7 @@ func oAuthCallbackHandler(ctx *gin.Context) {
 		return
 	}
 
+	flushCache()
 	ctx.Redirect(http.StatusTemporaryRedirect, "/")
 }
 

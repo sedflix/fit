@@ -6,9 +6,19 @@ import (
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"time"
 )
+
+var cacheStore *persistence.InMemoryStore
+
+func flushCache() {
+	err := cacheStore.Flush()
+	if err != nil {
+		log.Printf("unable to flush the page cahce due to %v", err)
+	}
+}
 
 func ErrorHandle() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -64,13 +74,13 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	// cache setup
-	cacheStore := persistence.NewInMemoryStore(time.Minute)
+	cacheStore = persistence.NewInMemoryStore(time.Minute)
 
 	// setup session cookie storage
 	var store = sessions.NewCookieStore([]byte("secret"))
 	router.Use(sessions.Sessions("goquestsession", store))
 
-	// custom error handling TODO: add ui
+	// custom error handling
 	router.Use(ErrorHandle())
 
 	// static
@@ -80,8 +90,8 @@ func main() {
 	router.StaticFile("/favicon.ico", "./web/favicon.ico")
 	router.LoadHTMLFiles("web/index.html")
 
-	router.GET("/", cache.CachePage(cacheStore, 2*time.Minute, index)) // index page
-	router.GET("/list/json", list)                                     // show information in json
+	router.GET("/", cache.CachePageWithoutQuery(cacheStore, 10*time.Minute, index)) // index page
+	router.GET("/list/json", list)                                                  // show information in json
 
 	router.GET("/login", authoriseUserHandler) // to register
 	router.GET("/auth", oAuthCallbackHandler)  // oauth callback

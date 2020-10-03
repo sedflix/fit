@@ -3,15 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/gin-gonic/contrib/sessions"
-	"github.com/gin-gonic/gin"
 	"github.com/snabb/isoweek"
 	"google.golang.org/api/fitness/v1"
 	"google.golang.org/api/option"
 	"google.golang.org/api/people/v1"
 	"log"
-	"net/http"
-	"sort"
 	"strings"
 	"time"
 )
@@ -34,9 +30,10 @@ func (a allUserInfo) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 // getFitnessService returns the service object google fitness with apt permission to read steps
 func getFitnessService(user OAuthUser) (*fitness.Service, error) {
 
-	tokenSource := config.TokenSource(context.TODO(), user.Token)
+	tokenSource := getTokenSource(user)
+
 	service, err := fitness.NewService(
-		context.TODO(),
+		context.Background(),
 		option.WithScopes(fitness.FitnessActivityReadScope),
 		option.WithTokenSource(tokenSource),
 	)
@@ -124,9 +121,9 @@ func getAllStepsOfUser(user OAuthUser) (int64, int64, error) {
 }
 
 func getProfilePicUrl(user OAuthUser) (Name string, Url string, err error) {
-	tokenSource := config.TokenSource(context.TODO(), user.Token)
+	tokenSource := getTokenSource(user)
 	service, err := people.NewService(
-		context.TODO(),
+		context.Background(),
 		option.WithScopes(people.UserinfoProfileScope),
 		option.WithTokenSource(tokenSource),
 	)
@@ -218,30 +215,4 @@ func getAll() ([]userInfoElement, error) {
 	}
 
 	return result, nil
-}
-func list(ctx *gin.Context) {
-	_ = sessions.Default(ctx)
-
-	result, err := getAll()
-	if err != nil {
-		_ = ctx.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-	sort.Sort(allUserInfo(result))
-	ctx.IndentedJSON(http.StatusOK, result)
-}
-
-func index(ctx *gin.Context) {
-	_ = sessions.Default(ctx)
-	result, err := getAll()
-	if err != nil {
-		_ = ctx.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-	sort.Sort(allUserInfo(result))
-	ctx.HTML(
-		http.StatusOK,
-		"index.html",
-		result,
-	)
 }
