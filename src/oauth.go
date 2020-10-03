@@ -130,7 +130,7 @@ func authoriseUserHandler(ctx *gin.Context) {
 	}
 
 	// redirect the user to consent page
-	authorisationURL := config.AuthCodeURL(oauthState, oauth2.AccessTypeOffline)
+	authorisationURL := config.AuthCodeURL(oauthState, oauth2.AccessTypeOffline, oauth2.ApprovalForce)
 	ctx.Redirect(http.StatusTemporaryRedirect, authorisationURL)
 	return
 }
