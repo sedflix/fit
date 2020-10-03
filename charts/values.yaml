@@ -45,7 +45,7 @@ ingress:
     kubernetes.io/ingress.class: nginx
     kubernetes.io/tls-acme: "true"
   hosts:
-    - host: fit.cluster.local
+    - host: fit.test.internal.mum1-stage.zeta.in
       paths: ["/"]
   tls: [ ]
   #  - secretName: chart-example-tls
