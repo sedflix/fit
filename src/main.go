@@ -100,5 +100,9 @@ func main() {
 	// Add the pprof routes
 	//pprof.Register(router)
 
+	log.Printf("why?")
+	log.Printf("no3?")
+	log.Printf("no3?")
+
 	_ = router.Run("0.0.0.0:8080")
 }

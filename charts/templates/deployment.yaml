@@ -49,10 +49,14 @@ spec:
             httpGet:
               path: /health
               port: http
+            timeoutSeconds: 10
+            periodSeconds: 60
           readinessProbe:
             httpGet:
               path: /health
               port: http
+            timeoutSeconds: 10
+            periodSeconds: 50
           resources:
       {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

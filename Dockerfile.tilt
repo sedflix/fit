@@ -1,0 +1,13 @@
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates tzdata
+ENV TZ=Asia/Kolkata
+ENV GIN_MODE=release
+
+WORKDIR /root/
+
+COPY src/ .
+
+EXPOSE 8080
+
+CMD ["./fits"]
