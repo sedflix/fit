@@ -8,7 +8,7 @@ image:
   repository: sedflix/fit
   pullPolicy: Always
   # Overrides the image tag whose default is the chart version.
-  tag: "latest"
+  tag: "edge"
 
 
 secretName: "google-creds"

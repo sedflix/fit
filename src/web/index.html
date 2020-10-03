@@ -70,17 +70,25 @@
 
 
     <div class="content">
-        {{range .}}
+        {{range $index, $person := .}}
             <div class="content__item">
-            <div class="content__item-intro">
-                <img class="content__item-img" src="{{.PhotoUrl}}" alt="{{.Name}}"/>
-                <h2 class="content__item-title">{{.Name}}</h2>
-            </div>
-            <h3 class="content__item-subtitle">
-                Week: {{.StepsWeek}}
-                Day: {{.StepsDay}}
-            </h3>
-        </div><!-- /content__item -->
+                <div class="content__item-intro">
+                    <img class="content__item-img" src="{{$person.PhotoUrl}}" alt="{{$person.Name}}"/>
+                    <h2 class="content__item-title">{{$person.Name}}</h2>
+                </div>
+                <h3 class="content__item-subtitle">
+                    Rank: {{$index}} <br>
+                    {{$person.Name}} has walked
+                </h3>
+                <div class="content__item-text" style="text-align: center">
+                    <p>
+                        {{$person.StepsWeek}} steps in week
+                    </p>
+                    <p>
+                        {{$person.StepsDay}} steps today
+                    </p>
+                </div>
+            </div><!-- /content__item -->
         {{end}}
 
         <button class="content__close">Close</button>
